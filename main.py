@@ -8,6 +8,7 @@ The line: "I broke production so I could fix it — my 'incidents resolved'
 metric has never looked better." (99 chars, within the 1-180 gate.)
 """
 
+import hashlib
 import os
 
 LINE = "I broke production so I could fix it \u2014 my 'incidents resolved' metric has never looked better."
@@ -31,7 +32,12 @@ def main():
     assert 1 <= len(written) <= 180, "length %d outside gate" % len(written)
     assert written.strip(), "entry is only whitespace"
     assert "\n" not in written, "entry must be a single line"
-    print("wrote %d chars to %s" % (len(written), path))
+    # The grader reads entry.txt as another user (uid 65534): confirm the
+    # mode we set above actually stuck, and report the digest for the log.
+    assert (os.stat(path).st_mode & 0o777) == 0o644, "entry.txt mode is not 0644"
+    digest = hashlib.sha256(written.encode("utf-8")).hexdigest()
+    print("wrote %d chars (%d bytes) to %s sha256 %s"
+          % (len(written), len(written.encode("utf-8")), path, digest))
 
 
 if __name__ == "__main__":
